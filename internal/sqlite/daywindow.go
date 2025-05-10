@@ -38,3 +38,25 @@ VALUES ($1, $2, $3)
 	_, err := c.db.Exec(queryW, dw.DayID, dw.WindowID, dw.Seconds)
 	return err
 }
+
+// AddSeconds grabs current seconds from db, adds n, and updates the record
+func (dw *DayWindow) AddSeconds(c *Connection, n int) error {
+	err := dw.read(c)
+	if err != nil {
+		return err
+	}
+
+	sum := dw.Seconds + n
+
+	queryUpdate := `
+UPDATE day_window SET seconds = $1
+WHERE day_id = $2 AND window_id = $3
+`
+	_, err = c.db.Exec(queryUpdate, sum, dw.DayID, dw.WindowID)
+	if err != nil {
+		return err
+	}
+
+	dw.Seconds = sum
+	return nil
+}
