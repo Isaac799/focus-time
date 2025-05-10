@@ -49,6 +49,33 @@ func (c *Connection) closeAndDelete() error {
 	return os.Remove(c.filename)
 }
 
+// SaveChange will, given a title and seconds, create or update records accordingly
+func (c *Connection) SaveChange(windowTitle string, seconds int) error {
+	window := NewWindow(windowTitle)
+
+	err := window.safeWrite(c)
+	if err != nil {
+		return err
+	}
+
+	day := NewDay()
+	err = day.safeWrite(c)
+	if err != nil {
+		return err
+	}
+
+	dw := NewDayWindow(day, window)
+	inserted, err := dw.safeWrite(c)
+	if err != nil {
+		return err
+	}
+	if !inserted {
+		return dw.AddSeconds(c, seconds)
+	}
+
+	return nil
+}
+
 // Init creates the database if it does not exist
 func (c *Connection) Init() error {
 	initQuery := `
