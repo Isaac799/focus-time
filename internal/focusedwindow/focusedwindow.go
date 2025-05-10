@@ -14,8 +14,8 @@ type FocusedWindow struct {
 	procWinTxt *syscall.LazyProc
 }
 
-// NewFocusedWindow returns a focused window using user32
-func NewFocusedWindow() FocusedWindow {
+// New returns a focused window using user32
+func New() FocusedWindow {
 	user32 := syscall.NewLazyDLL("user32.dll")
 	foreWin := user32.NewProc("GetForegroundWindow")
 	winTxt := user32.NewProc("GetWindowTextW")

@@ -22,7 +22,7 @@ const (
 )
 
 func main() {
-	w := focusedwindow.NewFocusedWindow()
+	w := focusedwindow.New()
 	title, err := w.Title()
 	if err != nil {
 		fmt.Println("failed")
