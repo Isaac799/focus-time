@@ -1,141 +1,82 @@
-// Package sqlite keeps persistence
-// syntax: https://github.com/mattn/go-sqlite3/blob/master/_example/simple/simple.go
-// driver: https://pkg.go.dev/modernc.org/sqlite
 package sqlite
 
 import (
 	"database/sql"
-	"fmt"
 	"os"
 	"path/filepath"
-	"time"
 )
 
-// Record is a database record
-type Record struct {
-	id      uint
-	Title   string
-	Seconds uint
-	iat     time.Time
+// Connection stores the database connection and name
+type Connection struct {
+	filename string
+	db       *sql.DB
 }
 
-func db() (*sql.DB, error) {
+func connect(filename string) (*Connection, error) {
+	sqlite := Connection{
+		filename: "",
+		db:       nil,
+	}
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return nil, err
+		return &sqlite, err
 	}
-	path := filepath.Join(home, ".focustime.db")
+	path := filepath.Join(home, filename)
 	db, err := sql.Open("sqlite", path)
 	if err != nil {
-		return nil, err
+		return &sqlite, err
 	}
-	return db, nil
+	sqlite.db = db
+	sqlite.filename = path
+	return &sqlite, nil
 }
 
-// New ensures a new database
-func New() error {
-	db, err := db()
+func defaultSqliteConn() (*Connection, error) {
+	return connect(DBName)
+}
+
+func testSqliteConn() (*Connection, error) {
+	return connect(DBNameTest)
+}
+
+// closeAndDelete will close a connection, and delete the sqlite file. used for testing
+func (c *Connection) closeAndDelete() error {
+	err := c.db.Close()
 	if err != nil {
 		return err
 	}
-	defer db.Close()
+	return os.Remove(c.filename)
+}
 
-	q := `
-	CREATE TABLE IF NOT EXISTS focustime (
-		id INTEGER PRIMARY KEY AUTOINCREMENT, 
-		title TEXT, 
-		seconds INT, 
-		iat DATETIME DEFAULT CURRENT_TIMESTAMP 
-	);
+// Init creates the database if it does not exist
+func (c *Connection) Init() error {
+	initQuery := `
+CREATE TABLE IF NOT EXISTS window (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    name        TEXT NOT NULL,
+    inserted_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    UNIQUE      ( name )
+);
+CREATE TABLE IF NOT EXISTS day (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    value       DATE NOT NULL,
+    inserted_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    UNIQUE      ( value )
+);
+CREATE TABLE IF NOT EXISTS day_window (
+    seconds     INT NOT NULL,
+    day_id      INT NOT NULL,
+    window_id   INT NOT NULL,
+    inserted_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at  DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    PRIMARY KEY ( day_id, window_id ),
+    FOREIGN KEY ( day_id )    REFERENCES day ( id ),
+    FOREIGN KEY ( window_id ) REFERENCES window ( id )
+);
 		`
-	_, err = db.Exec(q)
+	_, err := c.db.Exec(initQuery)
 	if err != nil {
 		return err
 	}
 	return nil
-}
-
-func find(title string) (Record, error) {
-	record := Record{}
-	db, err := db()
-	if err != nil {
-		return record, err
-	}
-	defer db.Close()
-
-	q := `
-	SELECT id, seconds, iat FROM focustime WHERE title = $1;
-	`
-	row := db.QueryRow(q, title)
-	if row == nil {
-		return record, nil
-	}
-	row.Scan(&record.id, &record.Seconds, &record.iat)
-	return record, nil
-}
-
-// Upsert will insert a record,to track time, or update an existing one
-func Upsert(title string, seconds uint) error {
-	record, err := find(title)
-	if err != nil {
-		return err
-	}
-
-	db, err := db()
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	if record.id == 0 {
-		fmt.Println("creating")
-		q := `
-		INSERT INTO focustime ( title, seconds ) VALUES ( $1, $2 );
-		`
-		_, err := db.Exec(q, title, seconds)
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-
-	fmt.Println("updating")
-	q := `
-	UPDATE focustime SET seconds = $2 WHERE id = $1;
-	`
-	_, err = db.Exec(q, record.id, record.Seconds+seconds)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Read gives a list of records
-func Read() ([]Record, error) {
-	db, err := db()
-	if err != nil {
-		return nil, err
-	}
-	defer db.Close()
-
-	q := `
-	SELECT id, title, seconds, iat FROM focustime
-	`
-	rows, err := db.Query(q)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	records := []Record{}
-	for rows.Next() {
-		record := Record{}
-		err := rows.Scan(&record.id, &record.Title, &record.Seconds, &record.iat)
-		if err != nil {
-			return nil, err
-		}
-		records = append(records, record)
-	}
-	return records, nil
 }
