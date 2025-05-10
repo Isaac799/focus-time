@@ -3,8 +3,15 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/Isaac799/focus-time/internal/focusedwindow"
+	"github.com/Isaac799/focus-time/internal/prompt"
+)
+
+const (
+	// Exit exits the program
+	Exit = iota + 1
 )
 
 func main() {
@@ -17,4 +24,15 @@ func main() {
 	}
 	fmt.Println("success")
 	fmt.Println(title)
+
+	options := []string{
+		"Exit",
+	}
+	for {
+		i := prompt.Select(options...)
+		switch i {
+		case Exit:
+			os.Exit(0)
+		}
+	}
 }
