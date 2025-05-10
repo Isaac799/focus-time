@@ -9,13 +9,13 @@ import (
 // Connection stores the database connection and name
 type Connection struct {
 	filename string
-	db       *sql.DB
+	DB       *sql.DB
 }
 
 func connect(filename string) (*Connection, error) {
 	sqlite := Connection{
 		filename: "",
-		db:       nil,
+		DB:       nil,
 	}
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -26,12 +26,13 @@ func connect(filename string) (*Connection, error) {
 	if err != nil {
 		return &sqlite, err
 	}
-	sqlite.db = db
+	sqlite.DB = db
 	sqlite.filename = path
 	return &sqlite, nil
 }
 
-func defaultSqliteConn() (*Connection, error) {
+// DefaultSqliteConn provides a connection for standard operation
+func DefaultSqliteConn() (*Connection, error) {
 	return connect(DBName)
 }
 
@@ -41,7 +42,7 @@ func testSqliteConn() (*Connection, error) {
 
 // closeAndDelete will close a connection, and delete the sqlite file. used for testing
 func (c *Connection) closeAndDelete() error {
-	err := c.db.Close()
+	err := c.DB.Close()
 	if err != nil {
 		return err
 	}
@@ -74,7 +75,7 @@ CREATE TABLE IF NOT EXISTS day_window (
     FOREIGN KEY ( window_id ) REFERENCES window ( id )
 );
 		`
-	_, err := c.db.Exec(initQuery)
+	_, err := c.DB.Exec(initQuery)
 	if err != nil {
 		return err
 	}

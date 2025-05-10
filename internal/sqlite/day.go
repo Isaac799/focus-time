@@ -26,7 +26,7 @@ SELECT id, inserted_at
 FROM day
 WHERE value = $1
 `
-	row := c.db.QueryRow(queryR, d.Value)
+	row := c.DB.QueryRow(queryR, d.Value)
 
 	err := row.Scan(&d.ID, &d.InsertedAt)
 	if err != nil {
@@ -41,7 +41,7 @@ INSERT INTO day (value)
 VALUES ($1) 
 RETURNING id
 `
-	row := c.db.QueryRow(queryW, d.Value)
+	row := c.DB.QueryRow(queryW, d.Value)
 	err := row.Scan(&d.ID)
 	if err != nil {
 		return err

@@ -28,7 +28,7 @@ SELECT id, inserted_at
 FROM window
 WHERE name = $1
 `
-	row := c.db.QueryRow(queryR, w.Name)
+	row := c.DB.QueryRow(queryR, w.Name)
 
 	err := row.Scan(&w.ID, &w.InsertedAt)
 	if err != nil {
@@ -47,8 +47,8 @@ INSERT INTO window (name)
 VALUES ($1) 
 RETURNING id
 `
-	row := c.db.QueryRow(queryW, w.Name)
-	err := row.Scan(&w.ID)
+	row := c.DB.QueryRow(queryW, w.Name)
+	err = row.Scan(&w.ID)
 	if err != nil {
 		return err
 	}

@@ -21,7 +21,7 @@ SELECT seconds
 FROM day_window
 WHERE day_id = $1 AND window_id = $2
 `
-	row := c.db.QueryRow(queryR, dw.DayID, dw.WindowID)
+	row := c.DB.QueryRow(queryR, dw.DayID, dw.WindowID)
 
 	err := row.Scan(&dw.Seconds)
 	if err != nil {
@@ -35,7 +35,7 @@ func (dw *DayWindow) write(c *Connection) error {
 INSERT INTO day_window (day_id, window_id, seconds) 
 VALUES ($1, $2, $3) 
 `
-	_, err := c.db.Exec(queryW, dw.DayID, dw.WindowID, dw.Seconds)
+	_, err := c.DB.Exec(queryW, dw.DayID, dw.WindowID, dw.Seconds)
 	return err
 }
 
@@ -52,7 +52,7 @@ func (dw *DayWindow) AddSeconds(c *Connection, n int) error {
 UPDATE day_window SET seconds = $1
 WHERE day_id = $2 AND window_id = $3
 `
-	_, err = c.db.Exec(queryUpdate, sum, dw.DayID, dw.WindowID)
+	_, err = c.DB.Exec(queryUpdate, sum, dw.DayID, dw.WindowID)
 	if err != nil {
 		return err
 	}
