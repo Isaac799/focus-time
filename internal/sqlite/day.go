@@ -20,13 +20,17 @@ func NewDay() Day {
 	}
 }
 
+func (d *Day) valueStr() string {
+	return d.Value.Local().Format("2006-01-02")
+}
+
 func (d *Day) read(c *Connection) error {
 	queryR := `
 SELECT id, inserted_at 
 FROM day
 WHERE value = $1
 `
-	row := c.DB.QueryRow(queryR, d.Value)
+	row := c.DB.QueryRow(queryR, d.valueStr())
 
 	err := row.Scan(&d.ID, &d.InsertedAt)
 	if err != nil {
@@ -35,14 +39,19 @@ WHERE value = $1
 	return nil
 }
 
-func (d *Day) write(c *Connection) error {
+func (d *Day) safeWrite(c *Connection) error {
+	err := d.read(c)
+	if !errors.Is(err, sql.ErrNoRows) {
+		return err
+	}
+
 	queryW := `
 INSERT INTO day (value) 
 VALUES ($1) 
 RETURNING id
 `
-	row := c.DB.QueryRow(queryW, d.Value)
-	err := row.Scan(&d.ID)
+	row := c.DB.QueryRow(queryW, d.valueStr())
+	err = row.Scan(&d.ID)
 	if err != nil {
 		return err
 	}
@@ -58,5 +67,5 @@ func (d *Day) Save(c *Connection) error {
 	if !errors.Is(err, sql.ErrNoRows) {
 		return err
 	}
-	return d.write(c)
+	return d.safeWrite(c)
 }

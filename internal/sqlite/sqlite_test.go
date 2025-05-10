@@ -17,7 +17,15 @@ func TestDay_WriteAndRead(t *testing.T) {
 
 	day := NewDay()
 
-	err = day.write(c)
+	err = day.safeWrite(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// handling conflict
+	day2 := NewDay()
+
+	err = day2.safeWrite(c)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -45,7 +53,15 @@ func TestWindow_WriteAndRead(t *testing.T) {
 
 	window := NewWindow("test window")
 
-	err = window.write(c)
+	err = window.safeWrite(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// handling conflict
+	window2 := NewWindow("test window")
+
+	err = window2.safeWrite(c)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -66,14 +82,14 @@ func setupTestDayWindow(t *testing.T, c *Connection) *DayWindow {
 	// Write a window for testing the assoc entity
 	window := NewWindow("test window")
 
-	err := window.write(c)
+	err := window.safeWrite(c)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Write a day for testing the assoc entity
 	day := NewDay()
-	err = day.write(c)
+	err = day.safeWrite(c)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -95,7 +111,7 @@ func TestDayWindow_WriteAndRead(t *testing.T) {
 
 	dw := setupTestDayWindow(t, c)
 
-	err = dw.write(c)
+	_, err = dw.safeWrite(c)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -115,8 +131,14 @@ func TestDayWindow_AddSeconds(t *testing.T) {
 	c.Init()
 
 	dw := setupTestDayWindow(t, c)
+	_, err = dw.safeWrite(c)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	err = dw.write(c)
+	// handling conflict
+	dw2 := setupTestDayWindow(t, c)
+	_, err = dw2.safeWrite(c)
 	if err != nil {
 		t.Fatal(err)
 	}

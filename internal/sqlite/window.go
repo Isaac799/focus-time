@@ -39,9 +39,14 @@ WHERE name = $1
 	return nil
 }
 
-func (w *Window) write(c *Connection) error {
+func (w *Window) safeWrite(c *Connection) error {
 	if len(w.Name) == 0 {
 		return ErrWindowNameRequired
+	}
+
+	err := w.read(c)
+	if !errors.Is(err, sql.ErrNoRows) {
+		return err
 	}
 
 	queryW := `
@@ -66,5 +71,5 @@ func (w *Window) Save(c *Connection) error {
 	if !errors.Is(err, sql.ErrNoRows) {
 		return err
 	}
-	return w.write(c)
+	return w.safeWrite(c)
 }

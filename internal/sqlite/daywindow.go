@@ -1,5 +1,10 @@
 package sqlite
 
+import (
+	"database/sql"
+	"errors"
+)
+
 // DayWindow is a database record
 type DayWindow struct {
 	Seconds  int
@@ -30,13 +35,18 @@ WHERE day_id = $1 AND window_id = $2
 	return nil
 }
 
-func (dw *DayWindow) write(c *Connection) error {
+func (dw *DayWindow) safeWrite(c *Connection) (bool, error) {
+	err := dw.read(c)
+	if !errors.Is(err, sql.ErrNoRows) {
+		return false, err
+	}
+
 	queryW := `
 INSERT INTO day_window (day_id, window_id, seconds) 
 VALUES ($1, $2, $3) 
 `
-	_, err := c.DB.Exec(queryW, dw.DayID, dw.WindowID, dw.Seconds)
-	return err
+	_, err = c.DB.Exec(queryW, dw.DayID, dw.WindowID, dw.Seconds)
+	return true, err
 }
 
 // AddSeconds grabs current seconds from db, adds n, and updates the record
