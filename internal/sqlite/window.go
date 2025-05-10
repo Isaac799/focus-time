@@ -14,8 +14,10 @@ type Window struct {
 }
 
 // NewWindow provides a window record for use in the database
-func NewWindow() Window {
-	return Window{}
+func NewWindow(name string) Window {
+	return Window{
+		Name: name,
+	}
 }
 
 func (w *Window) read(c *Connection) error {

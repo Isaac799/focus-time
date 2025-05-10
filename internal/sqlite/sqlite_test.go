@@ -43,8 +43,7 @@ func TestWindow_WriteAndRead(t *testing.T) {
 
 	c.Init()
 
-	window := NewWindow()
-	window.Name = "test window"
+	window := NewWindow("test window")
 
 	err = window.write(c)
 	if err != nil {
@@ -65,8 +64,7 @@ func TestWindow_WriteAndRead(t *testing.T) {
 
 func setupTestDayWindow(t *testing.T, c *Connection) *DayWindow {
 	// Write a window for testing the assoc entity
-	window := NewWindow()
-	window.Name = "test window"
+	window := NewWindow("test window")
 
 	err := window.write(c)
 	if err != nil {
