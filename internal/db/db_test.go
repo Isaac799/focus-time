@@ -1,4 +1,4 @@
-package sqlite
+package db
 
 import (
 	"testing"
@@ -7,17 +7,17 @@ import (
 )
 
 func TestDay_WriteAndRead(t *testing.T) {
-	c, err := testSqliteConn()
+	db, err := testSqliteConn()
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer c.closeAndDelete()
+	defer db.closeAndDelete()
 
-	c.Init()
+	db.Init()
 
 	day := NewDay()
 
-	err = day.safeWrite(c)
+	err = day.safeWrite(db)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -25,12 +25,12 @@ func TestDay_WriteAndRead(t *testing.T) {
 	// handling conflict
 	day2 := NewDay()
 
-	err = day2.safeWrite(c)
+	err = day2.safeWrite(db)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = day.read(c)
+	err = day.read(db)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -43,17 +43,17 @@ func TestDay_WriteAndRead(t *testing.T) {
 }
 
 func TestWindow_WriteAndRead(t *testing.T) {
-	c, err := testSqliteConn()
+	db, err := testSqliteConn()
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer c.closeAndDelete()
+	defer db.closeAndDelete()
 
-	c.Init()
+	db.Init()
 
 	window := NewWindow("test window")
 
-	err = window.safeWrite(c)
+	err = window.safeWrite(db)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,12 +61,12 @@ func TestWindow_WriteAndRead(t *testing.T) {
 	// handling conflict
 	window2 := NewWindow("test window")
 
-	err = window2.safeWrite(c)
+	err = window2.safeWrite(db)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = window.read(c)
+	err = window.read(db)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -75,18 +75,18 @@ func TestWindow_WriteAndRead(t *testing.T) {
 	}
 }
 
-func setupTestDayWindow(t *testing.T, c *Connection) *DayWindow {
+func setupTestDayWindow(t *testing.T, db *Database) *DayWindow {
 	// Write a window for testing the assoc entity
 	window := NewWindow("test window")
 
-	err := window.safeWrite(c)
+	err := window.safeWrite(db)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Write a day for testing the assoc entity
 	day := NewDay()
-	err = day.safeWrite(c)
+	err = day.safeWrite(db)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -98,49 +98,49 @@ func setupTestDayWindow(t *testing.T, c *Connection) *DayWindow {
 }
 
 func TestDayWindow_WriteAndRead(t *testing.T) {
-	c, err := testSqliteConn()
+	db, err := testSqliteConn()
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer c.closeAndDelete()
+	defer db.closeAndDelete()
 
-	c.Init()
+	db.Init()
 
-	dw := setupTestDayWindow(t, c)
+	dw := setupTestDayWindow(t, db)
 
-	_, err = dw.safeWrite(c)
+	_, err = dw.safeWrite(db)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = dw.read(c)
+	err = dw.read(db)
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestDayWindow_AddSeconds(t *testing.T) {
-	c, err := testSqliteConn()
+	db, err := testSqliteConn()
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer c.closeAndDelete()
-	c.Init()
+	defer db.closeAndDelete()
+	db.Init()
 
-	dw := setupTestDayWindow(t, c)
-	_, err = dw.safeWrite(c)
+	dw := setupTestDayWindow(t, db)
+	_, err = dw.safeWrite(db)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// handling conflict
-	dw2 := setupTestDayWindow(t, c)
-	_, err = dw2.safeWrite(c)
+	dw2 := setupTestDayWindow(t, db)
+	_, err = dw2.safeWrite(db)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = dw.AddSeconds(c, 200)
+	err = dw.AddSeconds(db, 200)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -149,7 +149,7 @@ func TestDayWindow_AddSeconds(t *testing.T) {
 		t.Fatal(ErrUnexpectedValue)
 	}
 
-	err = dw.AddSeconds(c, 300)
+	err = dw.AddSeconds(db, 300)
 	if err != nil {
 		t.Fatal(err)
 	}

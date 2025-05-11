@@ -1,4 +1,4 @@
-package sqlite
+package db
 
 import (
 	"database/sql"
@@ -23,13 +23,13 @@ func (d *Day) valueStr() string {
 	return d.Value.Format("2006-01-02")
 }
 
-func (d *Day) read(c *Connection) error {
+func (d *Day) read(db *Database) error {
 	queryR := `
 SELECT id 
 FROM day
 WHERE value = $1
 `
-	row := c.DB.QueryRow(queryR, d.valueStr())
+	row := db.DB.QueryRow(queryR, d.valueStr())
 
 	err := row.Scan(&d.ID)
 	if err != nil {
@@ -38,8 +38,8 @@ WHERE value = $1
 	return nil
 }
 
-func (d *Day) safeWrite(c *Connection) error {
-	err := d.read(c)
+func (d *Day) safeWrite(db *Database) error {
+	err := d.read(db)
 	if !errors.Is(err, sql.ErrNoRows) {
 		return err
 	}
@@ -49,7 +49,7 @@ INSERT INTO day (value)
 VALUES ($1) 
 RETURNING id
 `
-	row := c.DB.QueryRow(queryW, d.valueStr())
+	row := db.DB.QueryRow(queryW, d.valueStr())
 	err = row.Scan(&d.ID)
 	if err != nil {
 		return err
@@ -58,13 +58,13 @@ RETURNING id
 }
 
 // Save will save a day in the database, if it does not already exist
-func (d *Day) Save(c *Connection) error {
-	err := d.read(c)
+func (d *Day) Save(db *Database) error {
+	err := d.read(db)
 	if err == nil {
 		return nil
 	}
 	if !errors.Is(err, sql.ErrNoRows) {
 		return err
 	}
-	return d.safeWrite(c)
+	return d.safeWrite(db)
 }

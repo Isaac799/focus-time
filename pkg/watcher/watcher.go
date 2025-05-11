@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/Isaac799/focus-time/internal/focusedwindow"
+	"github.com/Isaac799/focus-time/pkg/focusedwindow"
 )
 
 const (

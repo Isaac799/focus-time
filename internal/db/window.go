@@ -1,4 +1,4 @@
-package sqlite
+package db
 
 import (
 	"database/sql"
@@ -18,7 +18,7 @@ func NewWindow(name string) Window {
 	}
 }
 
-func (w *Window) read(c *Connection) error {
+func (w *Window) read(db *Database) error {
 	if len(w.Name) == 0 {
 		return ErrWindowNameRequired
 	}
@@ -28,7 +28,7 @@ SELECT id
 FROM window
 WHERE name = $1
 `
-	row := c.DB.QueryRow(queryR, w.Name)
+	row := db.DB.QueryRow(queryR, w.Name)
 
 	err := row.Scan(&w.ID)
 	if err != nil {
@@ -37,12 +37,12 @@ WHERE name = $1
 	return nil
 }
 
-func (w *Window) safeWrite(c *Connection) error {
+func (w *Window) safeWrite(db *Database) error {
 	if len(w.Name) == 0 {
 		return ErrWindowNameRequired
 	}
 
-	err := w.read(c)
+	err := w.read(db)
 	if !errors.Is(err, sql.ErrNoRows) {
 		return err
 	}
@@ -52,7 +52,7 @@ INSERT INTO window (name)
 VALUES ($1) 
 RETURNING id
 `
-	row := c.DB.QueryRow(queryW, w.Name)
+	row := db.DB.QueryRow(queryW, w.Name)
 	err = row.Scan(&w.ID)
 	if err != nil {
 		return err
@@ -61,13 +61,13 @@ RETURNING id
 }
 
 // Save will save a window in the database, if it does not already exist
-func (w *Window) Save(c *Connection) error {
-	err := w.read(c)
+func (w *Window) Save(db *Database) error {
+	err := w.read(db)
 	if err == nil {
 		return nil
 	}
 	if !errors.Is(err, sql.ErrNoRows) {
 		return err
 	}
-	return w.safeWrite(c)
+	return w.safeWrite(db)
 }

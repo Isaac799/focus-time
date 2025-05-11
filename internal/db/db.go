@@ -1,4 +1,4 @@
-package sqlite
+package db
 
 import (
 	"database/sql"
@@ -6,14 +6,14 @@ import (
 	"path/filepath"
 )
 
-// Connection stores the database connection and name
-type Connection struct {
+// Database stores the database connection and name
+type Database struct {
 	filename string
 	DB       *sql.DB
 }
 
-func connect(filename string) (*Connection, error) {
-	sqlite := Connection{
+func connect(filename string) (*Database, error) {
+	sqlite := Database{
 		filename: "",
 		DB:       nil,
 	}
@@ -32,52 +32,52 @@ func connect(filename string) (*Connection, error) {
 }
 
 // DefaultSqliteConn provides a connection for standard operation
-func DefaultSqliteConn() (*Connection, error) {
+func DefaultSqliteConn() (*Database, error) {
 	return connect(DBName)
 }
 
-func testSqliteConn() (*Connection, error) {
+func testSqliteConn() (*Database, error) {
 	return connect(DBNameTest)
 }
 
 // closeAndDelete will close a connection, and delete the sqlite file. used for testing
-func (c *Connection) closeAndDelete() error {
-	err := c.DB.Close()
+func (db *Database) closeAndDelete() error {
+	err := db.DB.Close()
 	if err != nil {
 		return err
 	}
-	return os.Remove(c.filename)
+	return os.Remove(db.filename)
 }
 
 // SaveChange will, given a title and seconds, create or update records accordingly
-func (c *Connection) SaveChange(windowTitle string, seconds int) error {
+func (db *Database) SaveChange(windowTitle string, seconds int) error {
 	window := NewWindow(windowTitle)
 
-	err := window.safeWrite(c)
+	err := window.safeWrite(db)
 	if err != nil {
 		return err
 	}
 
 	day := NewDay()
-	err = day.safeWrite(c)
+	err = day.safeWrite(db)
 	if err != nil {
 		return err
 	}
 
 	dw := NewDayWindow(day, window)
-	inserted, err := dw.safeWrite(c)
+	inserted, err := dw.safeWrite(db)
 	if err != nil {
 		return err
 	}
 	if !inserted {
-		return dw.AddSeconds(c, seconds)
+		return dw.AddSeconds(db, seconds)
 	}
 
 	return nil
 }
 
 // Init creates the database if it does not exist
-func (c *Connection) Init() error {
+func (db *Database) Init() error {
 	initQuery := `
 CREATE TABLE IF NOT EXISTS window (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -98,7 +98,7 @@ CREATE TABLE IF NOT EXISTS day_window (
     FOREIGN KEY ( window_id ) REFERENCES window ( id )
 );
 		`
-	_, err := c.DB.Exec(initQuery)
+	_, err := db.DB.Exec(initQuery)
 	if err != nil {
 		return err
 	}

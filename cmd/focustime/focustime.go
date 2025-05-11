@@ -7,9 +7,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/Isaac799/focus-time/internal/prompt"
-	"github.com/Isaac799/focus-time/internal/sqlite"
-	"github.com/Isaac799/focus-time/internal/watcher"
+	"github.com/Isaac799/focus-time/internal/db"
+	"github.com/Isaac799/focus-time/pkg/prompt"
+	"github.com/Isaac799/focus-time/pkg/watcher"
 	_ "modernc.org/sqlite"
 )
 
@@ -32,16 +32,16 @@ func main() {
 		"Report Grouped",
 	}
 
-	c, err := sqlite.DefaultSqliteConn()
+	db, err := db.DefaultSqliteConn()
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer c.DB.Close()
-	c.Init()
+	defer db.DB.Close()
+	db.Init()
 
 	w := watcher.New()
 	go consumeErr(&w)
-	go consumeEvent(&w, c)
+	go consumeEvent(&w, db)
 	go start(&w)
 
 	for {
@@ -53,9 +53,9 @@ func main() {
 			event := w.Read()
 			fmt.Printf("Seconds: %d, Title: %s\n", int(event.Duration.Seconds()), event.Title)
 		case SeeReport:
-			c.PrintReport()
+			db.PrintReport()
 		case SeeReportGrouped:
-			c.PrintGroupedReport()
+			db.PrintGroupedReport()
 		}
 	}
 }
@@ -70,12 +70,12 @@ func consumeErr(w *watcher.Watcher) {
 	}
 }
 
-func consumeEvent(w *watcher.Watcher, c *sqlite.Connection) {
+func consumeEvent(w *watcher.Watcher, db *db.Database) {
 	for event := range w.OnChange {
 		if event.Kind == watcher.FocusKindStart {
 			continue
 		}
-		err := c.SaveChange(event.Title, int(event.Duration.Seconds()))
+		err := db.SaveChange(event.Title, int(event.Duration.Seconds()))
 		if err != nil {
 			fmt.Printf("watcher focus end error: %s\n", err.Error())
 		}

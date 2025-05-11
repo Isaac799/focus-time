@@ -1,4 +1,4 @@
-package sqlite
+package db
 
 import (
 	"fmt"
@@ -21,7 +21,7 @@ type Report struct {
 }
 
 // Report provides all records with at least certain amount of duration time tracked
-func (c *Connection) Report(duration time.Duration) (*Report, error) {
+func (db *Database) Report(duration time.Duration) (*Report, error) {
 	queryAll := `
 	SELECT w.name, d.value, dw.seconds
 	FROM day_window dw
@@ -29,7 +29,7 @@ func (c *Connection) Report(duration time.Duration) (*Report, error) {
 	LEFT JOIN day d ON d.id = dw.day_id 
 	WHERE dw.seconds > $1
 	`
-	rows, err := c.DB.Query(queryAll, duration.Seconds())
+	rows, err := db.DB.Query(queryAll, duration.Seconds())
 	if err != nil {
 		return nil, err
 	}
@@ -94,8 +94,8 @@ func (r *Report) GroupedByTitleSuffix() map[string][]ReportItem {
 }
 
 // PrintReport will print a report of focused windows
-func (c *Connection) PrintReport() {
-	report, err := c.Report(10 * time.Second)
+func (db *Database) PrintReport() {
+	report, err := db.Report(10 * time.Second)
 	if err != nil {
 		fmt.Print(err)
 		return
@@ -111,8 +111,8 @@ func (c *Connection) PrintReport() {
 }
 
 // PrintGroupedReport will print a report of focused windows, grouped by suffix
-func (c *Connection) PrintGroupedReport() {
-	records, err := c.Report(10 * time.Second)
+func (db *Database) PrintGroupedReport() {
+	records, err := db.Report(10 * time.Second)
 	if err != nil {
 		fmt.Print(err)
 		return

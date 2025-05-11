@@ -1,7 +1,7 @@
 // Package sqlite keeps persistence
 // syntax: https://github.com/mattn/go-sqlite3/blob/master/_example/simple/simple.go
 // driver: https://pkg.go.dev/modernc.org/sqlite
-package sqlite
+package db
 
 import "strings"
 
