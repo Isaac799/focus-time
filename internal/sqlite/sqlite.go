@@ -82,21 +82,17 @@ func (c *Connection) Init() error {
 CREATE TABLE IF NOT EXISTS window (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     name        TEXT NOT NULL,
-    inserted_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
     UNIQUE      ( name )
 );
 CREATE TABLE IF NOT EXISTS day (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     value       DATE NOT NULL,
-    inserted_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
     UNIQUE      ( value )
 );
 CREATE TABLE IF NOT EXISTS day_window (
     seconds     INT NOT NULL,
     day_id      INT NOT NULL,
     window_id   INT NOT NULL,
-    inserted_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at  DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
     PRIMARY KEY ( day_id, window_id ),
     FOREIGN KEY ( day_id )    REFERENCES day ( id ),
     FOREIGN KEY ( window_id ) REFERENCES window ( id )

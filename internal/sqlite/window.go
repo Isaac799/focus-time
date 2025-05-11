@@ -3,14 +3,12 @@ package sqlite
 import (
 	"database/sql"
 	"errors"
-	"time"
 )
 
 // Window is a database record of a desktop window
 type Window struct {
-	ID         int
-	Name       string
-	InsertedAt time.Time
+	ID   int
+	Name string
 }
 
 // NewWindow provides a window record for use in the database
@@ -26,13 +24,13 @@ func (w *Window) read(c *Connection) error {
 	}
 
 	queryR := `
-SELECT id, inserted_at 
+SELECT id 
 FROM window
 WHERE name = $1
 `
 	row := c.DB.QueryRow(queryR, w.Name)
 
-	err := row.Scan(&w.ID, &w.InsertedAt)
+	err := row.Scan(&w.ID)
 	if err != nil {
 		return err
 	}

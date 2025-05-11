@@ -73,9 +73,6 @@ func TestWindow_WriteAndRead(t *testing.T) {
 	if window.ID == 0 {
 		t.Fatal(ErrZeroID)
 	}
-	if window.InsertedAt.IsZero() {
-		t.Fatal(ErrMissingValue)
-	}
 }
 
 func setupTestDayWindow(t *testing.T, c *Connection) *DayWindow {
