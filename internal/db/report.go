@@ -32,6 +32,7 @@ func (db *Database) Report(duration time.Duration) (*Report, error) {
 	WHERE dw.seconds > $1
 	`
 	rows, err := db.DB.Query(queryAll, duration.Seconds())
+	defer rows.Close()
 	if err != nil {
 		return nil, err
 	}

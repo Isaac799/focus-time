@@ -10,12 +10,14 @@ import (
 type Database struct {
 	filename string
 	DB       *sql.DB
+	cache    cache
 }
 
 func connect(filename string) (*Database, error) {
 	sqlite := Database{
 		filename: "",
 		DB:       nil,
+		cache:    newCache(),
 	}
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -79,24 +81,24 @@ func (db *Database) SaveChange(windowTitle string, seconds int) error {
 // Init creates the database if it does not exist
 func (db *Database) Init() error {
 	initQuery := `
-CREATE TABLE IF NOT EXISTS window (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    name        TEXT NOT NULL,
-    UNIQUE      ( name )
-);
-CREATE TABLE IF NOT EXISTS day (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    value       DATE NOT NULL,
-    UNIQUE      ( value )
-);
-CREATE TABLE IF NOT EXISTS day_window (
-    seconds     INT NOT NULL,
-    day_id      INT NOT NULL,
-    window_id   INT NOT NULL,
-    PRIMARY KEY ( day_id, window_id ),
-    FOREIGN KEY ( day_id )    REFERENCES day ( id ),
-    FOREIGN KEY ( window_id ) REFERENCES window ( id )
-);
+	CREATE TABLE IF NOT EXISTS window (
+		id          INTEGER PRIMARY KEY AUTOINCREMENT,
+		name        TEXT NOT NULL,
+		UNIQUE      ( name )
+	);
+	CREATE TABLE IF NOT EXISTS day (
+		id          INTEGER PRIMARY KEY AUTOINCREMENT,
+		value       DATE NOT NULL,
+		UNIQUE      ( value )
+	);
+	CREATE TABLE IF NOT EXISTS day_window (
+		seconds     INT NOT NULL,
+		day_id      INT NOT NULL,
+		window_id   INT NOT NULL,
+		PRIMARY KEY ( day_id, window_id ),
+		FOREIGN KEY ( day_id )    REFERENCES day ( id ),
+		FOREIGN KEY ( window_id ) REFERENCES window ( id )
+	);
 		`
 	_, err := db.DB.Exec(initQuery)
 	if err != nil {
