@@ -20,7 +20,7 @@ func NewDay() Day {
 }
 
 func (d *Day) valueStr() string {
-	return d.Value.Local().Format("2006-01-02")
+	return d.Value.Format("2006-01-02")
 }
 
 func (d *Day) read(c *Connection) error {

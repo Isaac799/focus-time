@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"text/tabwriter"
 	"time"
 
 	"github.com/Isaac799/focus-time/internal/prompt"
@@ -18,17 +19,27 @@ const (
 	Exit = iota + 1
 	// SeeCurrentFocus shows the currently focused wino name
 	SeeCurrentFocus
+	// SeeReport shows a summary of the time tracked
+	SeeReport
 )
 
 func main() {
 	options := []string{
 		"Exit",
 		"See Current Focus",
+		"Report",
 	}
+
+	c, err := sqlite.DefaultSqliteConn()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer c.DB.Close()
+	c.Init()
 
 	w := watcher.New()
 	go consumeErr(&w)
-	go consumeEvent(&w)
+	go consumeEvent(&w, c)
 	go start(&w)
 
 	for {
@@ -39,6 +50,19 @@ func main() {
 		case SeeCurrentFocus:
 			event := w.Read()
 			fmt.Printf("Seconds: %d, Title: %s\n", int(event.Duration.Seconds()), event.Title)
+		case SeeReport:
+			report, err := c.Report(10 * time.Second)
+			if err != nil {
+				fmt.Print(err)
+				continue
+			}
+			writer := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+			fmt.Fprintln(writer, "\nTitle\tWhen\tSeconds")
+			for _, e := range report.Items {
+				s := fmt.Sprintf("%s\t%s\t%d", e.Title, e.When.Format("2006-01-02"), e.Seconds)
+				fmt.Fprintln(writer, s)
+			}
+			writer.Flush()
 		}
 	}
 }
@@ -53,15 +77,7 @@ func consumeErr(w *watcher.Watcher) {
 	}
 }
 
-func consumeEvent(w *watcher.Watcher) {
-	c, err := sqlite.DefaultSqliteConn()
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer c.DB.Close()
-
-	c.Init()
-
+func consumeEvent(w *watcher.Watcher, c *sqlite.Connection) {
 	for event := range w.OnChange {
 		if event.Kind == watcher.FocusKindStart {
 			fmt.Printf("Monitor Start: Seconds: %d, Title: %s\n", int(event.Duration.Seconds()), event.Title)
