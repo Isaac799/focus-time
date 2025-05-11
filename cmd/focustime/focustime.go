@@ -14,41 +14,44 @@ import (
 )
 
 func main() {
-	db, err := db.DefaultSqliteConn()
+	database, err := db.DefaultSqliteConn()
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer db.DB.Close()
-	db.Init()
+	defer database.DB.Close()
+	database.Init()
 
 	action := flag.String("action", "watch", "watch | csv | print")
+
+	// watch flags
 	verbose := flag.Bool("verbose", false, "used with the 'watch' action to print current focus")
+
+	// reporting defaults (last month, at least 1 minute long)
+	now := time.Now()
+	month := 30 * 24 * time.Hour
+	ago := now.Add(-month)
+
+	// reporting flags
+	startStr := flag.String("start", ago.Format("2006-01-02"), "used in reporting to specify a start date")
+	endStr := flag.String("end", now.Format("2006-01-02"), "used in reporting to specify an end date")
+	duration := flag.Duration("duration", 1*time.Minute, "used in reporting to specify a minimum duration")
+
 	flag.Parse()
+
+	filter := db.NewReportFilter(startStr, endStr, duration)
 
 	switch *action {
 	case "watch":
-		run(db, *verbose)
+		run(database, *verbose)
 	case "print":
-		db.PrintGroupedReport()
+		database.PrintGroupedReport(filter)
 	case "csv":
-		db.WriteCSV()
-	case "help":
-		printHelp()
+		database.WriteCSV(filter)
 	default:
-		printHelp()
-		os.Exit(1)
+		log.Fatal("unknown action. try --help")
 	}
 
 	os.Exit(0)
-}
-
-func printHelp() {
-	fmt.Println("")
-	fmt.Println("acceptable actions: watch | csv | print")
-	fmt.Println("- watch   is to be kept open while using computer")
-	fmt.Println("- csv   spits out a csv in working dir")
-	fmt.Println("- print spits out a report in the console, useful with grep")
-
 }
 
 func run(db *db.Database, verbose bool) {

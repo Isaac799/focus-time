@@ -17,25 +17,54 @@ type ReportItem struct {
 	Seconds int
 }
 
+// ReportFilter is the filters that can be applied to a report
+type ReportFilter struct {
+	start           time.Time
+	end             time.Time
+	atLeastDuration time.Duration
+}
+
+// NewReportFilter takes in flags and generates a report filter that can be used
+func NewReportFilter(startDateStr, endDateStr *string, duration *time.Duration) ReportFilter {
+	filter := ReportFilter{}
+	startDate, err := time.Parse("2006-01-02", *startDateStr)
+	if err == nil {
+		filter.start = startDate
+	}
+	endDate, err := time.Parse("2006-01-02", *endDateStr)
+	if err == nil {
+		filter.end = endDate
+	}
+	filter.atLeastDuration = *duration
+	return filter
+}
+
 // Report is a report derived from joined tables
 type Report struct {
 	Items []ReportItem
 }
 
 // Report provides all records with at least certain amount of duration time tracked
-func (db *Database) Report(duration time.Duration) (*Report, error) {
+func (db *Database) Report(filter ReportFilter) (*Report, error) {
 	queryAll := `
 	SELECT w.name, d.value, dw.seconds
 	FROM day_window dw
 	LEFT JOIN window w ON w.id = dw.window_id 
 	LEFT JOIN day d ON d.id = dw.day_id 
 	WHERE dw.seconds > $1 
+	AND   d.value >= $2
+	AND   d.value <= $3
 	`
-	rows, err := db.DB.Query(queryAll, duration.Seconds())
-	defer rows.Close()
+	rows, err := db.DB.Query(
+		queryAll,
+		filter.atLeastDuration.Seconds(),
+		filter.start.Format("2006-01-02"),
+		filter.end.Format("2006-01-02"),
+	)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	items := []ReportItem{}
 	for rows.Next() {
@@ -97,8 +126,8 @@ func (r *Report) GroupedByTitleSuffix() map[string][]ReportItem {
 }
 
 // PrintGroupedReport will print a report of focused windows, grouped by suffix
-func (db *Database) PrintGroupedReport() {
-	records, err := db.Report(10 * time.Second)
+func (db *Database) PrintGroupedReport(filter ReportFilter) {
+	records, err := db.Report(filter)
 	if err != nil {
 		fmt.Print(err)
 		return
@@ -118,7 +147,7 @@ func (db *Database) PrintGroupedReport() {
 }
 
 // WriteCSV will write a report of focused windows, grouped by suffix, to current working dir
-func (db *Database) WriteCSV() {
+func (db *Database) WriteCSV(filter ReportFilter) {
 	wd, err := os.Getwd()
 	if err != nil {
 		fmt.Print(err)
@@ -132,7 +161,7 @@ func (db *Database) WriteCSV() {
 	}
 	defer file.Close()
 
-	records, err := db.Report(10 * time.Second)
+	records, err := db.Report(filter)
 	if err != nil {
 		fmt.Print(err)
 		return
