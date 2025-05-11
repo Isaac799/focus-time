@@ -29,7 +29,7 @@ func (db *Database) Report(duration time.Duration) (*Report, error) {
 	FROM day_window dw
 	LEFT JOIN window w ON w.id = dw.window_id 
 	LEFT JOIN day d ON d.id = dw.day_id 
-	WHERE dw.seconds > $1
+	WHERE dw.seconds > $1 
 	`
 	rows, err := db.DB.Query(queryAll, duration.Seconds())
 	defer rows.Close()
@@ -96,23 +96,6 @@ func (r *Report) GroupedByTitleSuffix() map[string][]ReportItem {
 	return m
 }
 
-// PrintReport will print a report of focused windows
-func (db *Database) PrintReport() {
-	report, err := db.Report(10 * time.Second)
-	if err != nil {
-		fmt.Print(err)
-		return
-	}
-	writer := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(writer, "\nTitle\tWhen\tDuration")
-	for _, e := range report.Items {
-		dur := time.Duration(e.Seconds) * time.Second
-		s := fmt.Sprintf("%s\t%s\t%s", e.Title, e.When.Format("2006-01-02"), dur.String())
-		fmt.Fprintln(writer, s)
-	}
-	writer.Flush()
-}
-
 // PrintGroupedReport will print a report of focused windows, grouped by suffix
 func (db *Database) PrintGroupedReport() {
 	records, err := db.Report(10 * time.Second)
@@ -123,11 +106,11 @@ func (db *Database) PrintGroupedReport() {
 	writer := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 	fmt.Fprintln(writer, "\nGroup\tTitle\tWhen\tDuration")
 	for key, items := range records.GroupedByTitleSuffix() {
-		s := fmt.Sprintf("%s\t \t \t", key)
+		s := fmt.Sprintf("%s\t-\t-\t-", key)
 		fmt.Fprintln(writer, s)
 		for _, e := range items {
 			dur := time.Duration(e.Seconds) * time.Second
-			s := fmt.Sprintf("%s\t%s\t%s\t%s", "", e.Title, e.When.Format("2006-01-02"), dur.String())
+			s := fmt.Sprintf("%s\t%s\t%s\t%s", key, e.Title, e.When.Format("2006-01-02"), dur.String())
 			fmt.Fprintln(writer, s)
 		}
 	}

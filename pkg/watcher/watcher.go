@@ -69,6 +69,7 @@ func (w *Watcher) Start(frequency time.Duration) {
 
 		starting := len(title) > 0 && len(w.windowTitle) == 0
 		if starting {
+			w.focusStart = time.Now()
 			w.windowTitle = title
 			w.OnChange <- Event{
 				Kind:     FocusKindStart,

@@ -2,39 +2,18 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
 	"time"
 
 	"github.com/Isaac799/focus-time/internal/db"
-	"github.com/Isaac799/focus-time/pkg/prompt"
 	"github.com/Isaac799/focus-time/pkg/watcher"
 	_ "modernc.org/sqlite"
 )
 
-const (
-	// Exit exits the program
-	Exit = iota + 1
-	// PrintCurrentFocus shows the currently focused wino name
-	PrintCurrentFocus
-	// PrintSeeReport shows a summary of the time tracked
-	PrintSeeReport
-	// PrintReportGrouped shows a summary of the time tracked, attempting to be grouped by title
-	PrintReportGrouped
-	// WriteCSV writes a csv file to current working dir
-	WriteCSV
-)
-
 func main() {
-	options := []string{
-		"Exit",
-		"See Current Focus",
-		"Report",
-		"Report Grouped",
-		"Generate CSV",
-	}
-
 	db, err := db.DefaultSqliteConn()
 	if err != nil {
 		log.Fatal(err)
@@ -42,26 +21,59 @@ func main() {
 	defer db.DB.Close()
 	db.Init()
 
+	action := flag.String("action", "watch", "watch | csv | print")
+	verbose := flag.Bool("verbose", false, "used with the 'watch' action to print current focus")
+	flag.Parse()
+
+	switch *action {
+	case "watch":
+		run(db, *verbose)
+	case "print":
+		db.PrintGroupedReport()
+	case "csv":
+		db.WriteCSV()
+	case "help":
+		printHelp()
+	default:
+		printHelp()
+		os.Exit(1)
+	}
+
+	os.Exit(0)
+}
+
+func printHelp() {
+	fmt.Println("")
+	fmt.Println("acceptable actions: watch | csv | print")
+	fmt.Println("- watch   is to be kept open while using computer")
+	fmt.Println("- csv   spits out a csv in working dir")
+	fmt.Println("- print spits out a report in the console, useful with grep")
+
+}
+
+func run(db *db.Database, verbose bool) {
 	w := watcher.New()
 	go consumeErr(&w)
 	go consumeEvent(&w, db)
 	go start(&w)
 
+	fmt.Println("watcher active")
+	fmt.Println("keep window open")
+	fmt.Println("press [ctrl + c] to quit")
+
+	if verbose {
+		fmt.Println("running in verbose mode")
+	}
+
 	for {
-		i := prompt.Select(options...)
-		switch i {
-		case Exit:
-			os.Exit(0)
-		case PrintCurrentFocus:
-			event := w.Read()
-			fmt.Printf("Seconds: %d, Title: %s\n", int(event.Duration.Seconds()), event.Title)
-		case PrintSeeReport:
-			db.PrintReport()
-		case PrintReportGrouped:
-			db.PrintGroupedReport()
-		case WriteCSV:
-			db.WriteCSV()
+		if !verbose {
+			time.Sleep(60 * time.Second)
+			continue
 		}
+
+		time.Sleep(1 * time.Second)
+		event := w.Read()
+		fmt.Printf("%d %s\n", int(event.Duration.Seconds()), event.Title)
 	}
 }
 

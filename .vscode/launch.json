@@ -5,11 +5,28 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Run Main",
+            "name": "Watch Verbose",
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "${workspaceFolder}/cmd/focustime"
+            "program": "${workspaceFolder}/cmd/focustime",
+            "args": ["--action=watch", "--verbose"]
+        },
+        {
+            "name": "Print",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/cmd/focustime",
+            "args": ["--action=print"]
+        },
+        {
+            "name": "CSV",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/cmd/focustime",
+            "args": ["--action=csv"]
         },
         {
             "name": "Test Sqlite",
