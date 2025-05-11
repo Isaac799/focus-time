@@ -16,12 +16,14 @@ import (
 const (
 	// Exit exits the program
 	Exit = iota + 1
-	// SeeCurrentFocus shows the currently focused wino name
-	SeeCurrentFocus
-	// SeeReport shows a summary of the time tracked
-	SeeReport
-	// SeeReportGrouped shows a summary of the time tracked, attempting to be grouped by title
-	SeeReportGrouped
+	// PrintCurrentFocus shows the currently focused wino name
+	PrintCurrentFocus
+	// PrintSeeReport shows a summary of the time tracked
+	PrintSeeReport
+	// PrintReportGrouped shows a summary of the time tracked, attempting to be grouped by title
+	PrintReportGrouped
+	// WriteCSV writes a csv file to current working dir
+	WriteCSV
 )
 
 func main() {
@@ -30,6 +32,7 @@ func main() {
 		"See Current Focus",
 		"Report",
 		"Report Grouped",
+		"Generate CSV",
 	}
 
 	db, err := db.DefaultSqliteConn()
@@ -49,13 +52,15 @@ func main() {
 		switch i {
 		case Exit:
 			os.Exit(0)
-		case SeeCurrentFocus:
+		case PrintCurrentFocus:
 			event := w.Read()
 			fmt.Printf("Seconds: %d, Title: %s\n", int(event.Duration.Seconds()), event.Title)
-		case SeeReport:
+		case PrintSeeReport:
 			db.PrintReport()
-		case SeeReportGrouped:
+		case PrintReportGrouped:
 			db.PrintGroupedReport()
+		case WriteCSV:
+			db.WriteCSV()
 		}
 	}
 }

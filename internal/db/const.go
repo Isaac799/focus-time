@@ -15,4 +15,6 @@ var (
 	DBName = ".focustime.db"
 	// DBNameTest is the filename of the sqlite file for tests, distinct to allow for dropping
 	DBNameTest = ".focustime_test.db"
+	// CSVFileName is the filename of the csv document generated
+	CSVFileName = "focustime.csv"
 )

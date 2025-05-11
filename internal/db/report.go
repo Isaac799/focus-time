@@ -1,8 +1,10 @@
 package db
 
 import (
+	"encoding/csv"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"text/tabwriter"
 	"time"
@@ -129,4 +131,52 @@ func (db *Database) PrintGroupedReport() {
 		}
 	}
 	writer.Flush()
+}
+
+// WriteCSV will write a report of focused windows, grouped by suffix, to current working dir
+func (db *Database) WriteCSV() {
+	wd, err := os.Getwd()
+	if err != nil {
+		fmt.Print(err)
+		return
+	}
+	p := filepath.Join(wd, CSVFileName)
+	file, err := os.Create(p)
+	if err != nil {
+		fmt.Print(err)
+		return
+	}
+	defer file.Close()
+
+	records, err := db.Report(10 * time.Second)
+	if err != nil {
+		fmt.Print(err)
+		return
+	}
+
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
+
+	header := []string{"Group", "Title", "When", "Duration"}
+	err = writer.Write(header)
+	if err != nil {
+		fmt.Print(err)
+		return
+	}
+
+	for key, items := range records.GroupedByTitleSuffix() {
+		for _, e := range items {
+			row := make([]string, 4)
+			dur := time.Duration(e.Seconds) * time.Second
+			row[0] = key
+			row[1] = e.Title
+			row[2] = e.When.Format("2006-01-02")
+			row[3] = dur.String()
+			err = writer.Write(row)
+			if err != nil {
+				fmt.Print(err)
+				return
+			}
+		}
+	}
 }
