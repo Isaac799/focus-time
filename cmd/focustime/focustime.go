@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"text/tabwriter"
 	"time"
 
 	"github.com/Isaac799/focus-time/internal/prompt"
@@ -21,6 +20,8 @@ const (
 	SeeCurrentFocus
 	// SeeReport shows a summary of the time tracked
 	SeeReport
+	// SeeReportGrouped shows a summary of the time tracked, attempting to be grouped by title
+	SeeReportGrouped
 )
 
 func main() {
@@ -28,6 +29,7 @@ func main() {
 		"Exit",
 		"See Current Focus",
 		"Report",
+		"Report Grouped",
 	}
 
 	c, err := sqlite.DefaultSqliteConn()
@@ -51,18 +53,9 @@ func main() {
 			event := w.Read()
 			fmt.Printf("Seconds: %d, Title: %s\n", int(event.Duration.Seconds()), event.Title)
 		case SeeReport:
-			report, err := c.Report(10 * time.Second)
-			if err != nil {
-				fmt.Print(err)
-				continue
-			}
-			writer := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-			fmt.Fprintln(writer, "\nTitle\tWhen\tSeconds")
-			for _, e := range report.Items {
-				s := fmt.Sprintf("%s\t%s\t%d", e.Title, e.When.Format("2006-01-02"), e.Seconds)
-				fmt.Fprintln(writer, s)
-			}
-			writer.Flush()
+			c.PrintReport()
+		case SeeReportGrouped:
+			c.PrintGroupedReport()
 		}
 	}
 }
@@ -73,21 +66,18 @@ func start(w *watcher.Watcher) {
 
 func consumeErr(w *watcher.Watcher) {
 	for event := range w.OnError {
-		fmt.Printf("Monitor Error Event: %s\n", event.Error())
+		fmt.Printf("watcher error: %s\n", event.Error())
 	}
 }
 
 func consumeEvent(w *watcher.Watcher, c *sqlite.Connection) {
 	for event := range w.OnChange {
 		if event.Kind == watcher.FocusKindStart {
-			fmt.Printf("Monitor Start: Seconds: %d, Title: %s\n", int(event.Duration.Seconds()), event.Title)
 			continue
 		}
-
-		fmt.Printf("Monitor End: Seconds: %d, Title: %s\n", int(event.Duration.Seconds()), event.Title)
 		err := c.SaveChange(event.Title, int(event.Duration.Seconds()))
 		if err != nil {
-			fmt.Printf("Monitor End Error: %s\n", err.Error())
+			fmt.Printf("watcher focus end error: %s\n", err.Error())
 		}
 	}
 }

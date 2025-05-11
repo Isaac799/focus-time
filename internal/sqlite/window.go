@@ -14,7 +14,7 @@ type Window struct {
 // NewWindow provides a window record for use in the database
 func NewWindow(name string) Window {
 	return Window{
-		Name: name,
+		Name: cleanString(name),
 	}
 }
 
