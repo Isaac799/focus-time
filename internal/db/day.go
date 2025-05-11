@@ -56,15 +56,3 @@ RETURNING id
 	}
 	return nil
 }
-
-// Save will save a day in the database, if it does not already exist
-func (d *Day) Save(db *Database) error {
-	err := d.read(db)
-	if err == nil {
-		return nil
-	}
-	if !errors.Is(err, sql.ErrNoRows) {
-		return err
-	}
-	return d.safeWrite(db)
-}

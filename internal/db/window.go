@@ -59,15 +59,3 @@ RETURNING id
 	}
 	return nil
 }
-
-// Save will save a window in the database, if it does not already exist
-func (w *Window) Save(db *Database) error {
-	err := w.read(db)
-	if err == nil {
-		return nil
-	}
-	if !errors.Is(err, sql.ErrNoRows) {
-		return err
-	}
-	return w.safeWrite(db)
-}
